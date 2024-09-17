@@ -3,8 +3,8 @@ headless = true
 enableCORS = false
 
 [theme]
-primaryColor = "#F39C12"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F0F0F5"
-textColor = "#262730"
+primaryColor = "#B22234"  # Red
+backgroundColor = "#FFFFFF"  # White
+secondaryBackgroundColor = "#3C3B6E"  # Blue
+textColor = "#000000"  # Black
 font = "times new roman"
