@@ -46,8 +46,8 @@ def select_race_results(race_result_type, row, volume_counts, heat = ""):
 
     volume_counts['Result'] = row[rank_row]
     if race_result_type == 'Percentage Time Away from Winner':
-        volume_counts['Result'] = (row[time_row] - row[time_best_row]) / row[
-            time_best_row] * 100
+        volume_counts['Result'] = ((row[time_row] - row[time_best_row]) / row[
+            time_best_row]) * 100
     return volume_counts
 
 

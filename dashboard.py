@@ -17,7 +17,10 @@ results_df = xls['Results']
 
 # Streamlit app
 st.set_page_config(layout="wide")  # Set the page configuration to wide layout
-st.title("Athlete's Performance Dependence on Wellness and Training")
+st.title("Compare Athlete Performance to Training Volume and Wellness Metrics")
+st.write("###### This dashboard is designed to help coaches and athletes visualize the influences "
+        "of training and their wellness metrics on their performance for the days leading up to a race")
+
 
 (st, col1, col2, athlete, use_travel_day, days_prior, race_result_type, selected_metrics,
  visualization_option) = selection_options(st, wellness_df)
