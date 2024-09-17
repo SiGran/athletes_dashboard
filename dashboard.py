@@ -175,3 +175,4 @@ if not aggregated_data.empty:
             col_index = (col_index + 1) % 2
 
 
+st.write("Note: hovering over a value will show the date of the competition and the number of days prior included in the analysis")
