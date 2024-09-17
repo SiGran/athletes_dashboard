@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 from pathlib import Path
 from utils import aggregate_training_volume, aggregate_metric
 from selection_tools import selection_options
