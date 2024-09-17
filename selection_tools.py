@@ -88,7 +88,7 @@ def selection_options(st, wellness_df):
 
         # Visualization options
         visualization_option = st.selectbox("6. Visualization options",
-                                            ["combined(if possible)",
+                                            ["combined (if possible)",
                                              "Separate graphs"])
 
     with col4:

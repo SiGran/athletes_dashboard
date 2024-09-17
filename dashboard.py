@@ -135,7 +135,7 @@ if not aggregated_data.empty:
         selected_metrics.remove("Sleep Hours")
 
     # Create a single graph for the remaining metrics
-    if visualization_option == "In one graph (if possible)" and len(selected_metrics) > 0:
+    if visualization_option == "combined (if possible)" and len(selected_metrics) > 0:
         fig = go.Figure()
         for metric in selected_metrics:
             metric_data = aggregate_metric(metric, wellness_df, results_df, athlete,
@@ -156,6 +156,7 @@ if not aggregated_data.empty:
         )
         cols[col_index].plotly_chart(fig)
     else:
+
         for metric in selected_metrics:
             metric_data = aggregate_metric(metric, wellness_df, results_df, athlete,
                                            use_travel_day, days_prior, race_result_type,
