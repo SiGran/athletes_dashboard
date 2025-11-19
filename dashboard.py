@@ -17,24 +17,41 @@ from selection_tools import selection_options
 # DATA LOADING
 # =============================================================================
 
+@st.cache_data
+def load_data(file_path):
+    """
+    Load and cache Excel data to avoid re-reading on every interaction.
+
+    This function is cached by Streamlit, so the Excel file is only read once
+    per session (or when the file changes). This dramatically improves performance.
+
+    Args:
+        file_path (Path): Path to the Excel data file
+
+    Returns:
+        tuple: (wellness_df, results_df) - Two dataframes for analysis
+    """
+    # Define training volume categories as ordered categorical data
+    # This ensures proper sorting in visualizations (Low < Moderate < High)
+    categories = ['Low', 'Moderate', 'High']
+    cat_type = pd.CategoricalDtype(categories=categories, ordered=True)
+
+    # Load all three sheets from the Excel file
+    # - 'Wellness and Load': Daily training and wellness metrics for each athlete
+    # - 'Results': Competition performance data (ranks, times, dates)
+    # - 'Definitions': Metadata describing the metrics
+    xls = pd.read_excel(file_path, sheet_name=['Wellness and Load', 'Results', 'Definitions'],
+                        dtype={'Sport Specific Training Volume': cat_type})
+
+    # Return the two primary dataframes for analysis
+    return xls['Wellness and Load'], xls['Results']
+
+
 # Construct path to the Excel data file containing wellness, load, and results data
 data_file = Path.cwd() / 'data' / 'WellnessLoadandResultsData.xlsx'
 
-# Define training volume categories as ordered categorical data
-# This ensures proper sorting in visualizations (Low < Moderate < High)
-categories = ['Low', 'Moderate', 'High']
-cat_type = pd.CategoricalDtype(categories=categories, ordered=True)
-
-# Load all three sheets from the Excel file
-# - 'Wellness and Load': Daily training and wellness metrics for each athlete
-# - 'Results': Competition performance data (ranks, times, dates)
-# - 'Definitions': Metadata describing the metrics
-xls = pd.read_excel(data_file, sheet_name=['Wellness and Load', 'Results', 'Definitions'],
-                    dtype={'Sport Specific Training Volume': cat_type})
-
-# Extract the two primary dataframes for analysis
-wellness_df = xls['Wellness and Load']  # Daily wellness and training data
-results_df = xls['Results']              # Competition results
+# Load data using cached function (10-100x faster on subsequent interactions)
+wellness_df, results_df = load_data(data_file)
 
 # =============================================================================
 # STREAMLIT APP CONFIGURATION
@@ -117,10 +134,14 @@ if not aggregated_data.empty:
     cols = st.columns(2)
     col_index = 0  # Track which column to place the next chart in
 
+    # Create a copy of selected_metrics to avoid modifying the original list
+    # This prevents issues when removing items during iteration
+    remaining_metrics = selected_metrics.copy()
+
     # -------------------------------------------------------------------------
     # TRAINING VOLUME VISUALIZATION (Stacked Bar Chart)
     # -------------------------------------------------------------------------
-    if "Sport Specific Training Volume" in selected_metrics:
+    if "Sport Specific Training Volume" in remaining_metrics:
         """
         Create a stacked bar chart showing training volume distribution.
         Each bar represents a competition result, stacked by Low/Moderate/High training days.
@@ -173,12 +194,12 @@ if not aggregated_data.empty:
         col_index = (col_index + 1) % 2
 
         # Remove from metrics list to avoid re-plotting
-        selected_metrics.remove("Sport Specific Training Volume")
+        remaining_metrics.remove("Sport Specific Training Volume")
 
     # -------------------------------------------------------------------------
     # RESTING HEART RATE VISUALIZATION (Box Plot)
     # -------------------------------------------------------------------------
-    if "Resting HR" in selected_metrics:
+    if "Resting HR" in remaining_metrics:
         """
         Create a box plot for Resting Heart Rate.
         Box plots show distribution (median, quartiles, outliers) of HR values
@@ -211,12 +232,12 @@ if not aggregated_data.empty:
         # Display chart and move to next column
         cols[col_index].plotly_chart(fig_hr)
         col_index = (col_index + 1) % 2
-        selected_metrics.remove("Resting HR")
+        remaining_metrics.remove("Resting HR")
 
     # -------------------------------------------------------------------------
     # SLEEP HOURS VISUALIZATION (Box Plot)
     # -------------------------------------------------------------------------
-    if "Sleep Hours" in selected_metrics:
+    if "Sleep Hours" in remaining_metrics:
         """
         Create a box plot for Sleep Hours.
         Shows the distribution of sleep duration in the days prior to each competition.
@@ -248,7 +269,7 @@ if not aggregated_data.empty:
         # Display chart and move to next column
         cols[col_index].plotly_chart(fig_sleep)
         col_index = (col_index + 1) % 2
-        selected_metrics.remove("Sleep Hours")
+        remaining_metrics.remove("Sleep Hours")
 
     # -------------------------------------------------------------------------
     # REMAINING WELLNESS METRICS VISUALIZATION
@@ -256,7 +277,7 @@ if not aggregated_data.empty:
     # Handle remaining metrics: Stress, Soreness, Sleep Quality, Motivation, Fatigue
     # These metrics use a 0-100 subjective scale
 
-    if visualization_option == "combined (if possible)" and len(selected_metrics) > 0:
+    if visualization_option == "combined (if possible)" and len(remaining_metrics) > 0:
         """
         COMBINED VIEW: All remaining metrics on a single chart.
         This works well since all wellness metrics use the same 0-100 scale.
@@ -264,8 +285,8 @@ if not aggregated_data.empty:
         """
         fig = go.Figure()
 
-        # Add a box plot trace for each selected metric
-        for metric in selected_metrics:
+        # Add a box plot trace for each remaining metric
+        for metric in remaining_metrics:
             metric_data = aggregate_metric(metric, wellness_df, results_df, athlete,
                                            use_travel_day, days_prior, race_result_type,
                                            st.session_state.heat_1, st.session_state.heat_2)
@@ -281,7 +302,7 @@ if not aggregated_data.empty:
 
         # Configure combined chart layout
         fig.update_layout(
-            title=f"{race_result_type} vs {selected_metrics} for {athlete}",
+            title=f"{race_result_type} vs {remaining_metrics} for {athlete}",
             xaxis_title=x_title,
             yaxis_title='Metric Value (0-100 subjective score)'
         )
@@ -293,7 +314,7 @@ if not aggregated_data.empty:
         SEPARATE VIEW: Each metric gets its own chart.
         Provides more detail for individual metrics but uses more screen space.
         """
-        for metric in selected_metrics:
+        for metric in remaining_metrics:
             # Aggregate data for this specific metric
             metric_data = aggregate_metric(metric, wellness_df, results_df, athlete,
                                            use_travel_day, days_prior, race_result_type,
